@@ -14,20 +14,22 @@ class LoginController extends Controller
         try {
             // validate the request
             $request->validate([
-                'email' => 'required|string|email',
+                'username' => 'required|string',
                 'password' => 'required|string',
             ]);
 
             // check if the user exists
-            $user = User::where('email', $request->email)->first();
+            $user = User::where('username', $request->username)->first();
 
             if ($user) {
                 // check if the user has verified their email
                 if (!$user->email_verified_at) {
                     return response()->json([
-                        'status' => false,
-                        'message' => 'Email not verified'
-                    ], 400);
+                        'status' => true,
+                        'message' => 'Email not verified',
+                        'is_verified' => false,
+                        'user' => $user,
+                    ], 200);
                 }
 
                 // check if the password is correct
@@ -50,14 +52,13 @@ class LoginController extends Controller
             } else {
                 return response()->json([
                     'status' => false,
-                    'message' => 'User not found'
+                    'message' => 'The user does not exist'
                 ], 404);
             }
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Something went wrong',
-                'error' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
