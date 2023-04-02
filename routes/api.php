@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\VerifyController;
 use App\Http\Controllers\RegisterController;
@@ -33,17 +34,23 @@ Route::middleware('auth:sanctum')->group(function(){
 
     Route::post('/survey', [SurveyController::class, 'saveSurvey']);
     Route::post('/survey/questions', [SurveyController::class, 'saveQuestionsToSurvey']);
-    Route::get('/survey', [SurveyController::class, 'getSurveys']);
-    Route::get('/survey/{slug}', [SurveyController::class, 'getSurvey']);
+    Route::get('/survey/{slug}/show', [SurveyController::class, 'show']);
 
-    Route::post('/response', [ResponseController::class, 'saveResponse']);
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     Route::get('/survey-report/{slug}', [SurveyReportController::class, 'getSurvey']);
 
+    Route::post('/logout', [LogoutController::class, 'logout']);
+
+    Route::post('/user-role', [UserController::class, 'getUserRole']);
+
+    Route::post('/survey/{id}/status', [SurveyController::class, 'changeSurveyStatus']);
 });
 
+Route::get('/survey', [SurveyController::class, 'getSurveys']);
+Route::get('/survey/{slug}', [SurveyController::class, 'getSurvey']);
+Route::post('/response', [ResponseController::class, 'saveResponse']);
 
 // User Registration
 Route::post('/register', [RegisterController::class, 'register']);
@@ -55,5 +62,7 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::post('/verify-email', [VerifyController::class, 'verify']);
 
 Route::get("/users/{id}", [UserController::class, 'getUser']);
+
+Route::post('/new-verification-token', [UserController::class, 'newVerificationToken']);
 
 

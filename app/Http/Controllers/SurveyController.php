@@ -6,6 +6,7 @@ use App\Models\Survey;
 use App\Models\Question;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class SurveyController extends Controller
 {
@@ -14,13 +15,12 @@ class SurveyController extends Controller
         try {
             $user = $request->user();
 
+            abort_if(Gate::denies('save survey', $user), 403, 'You are not authorized to view this page');
+
             $request->validate([
                 'title' => 'required|string',
                 'description' => 'required|string',
                 'startDate' => 'required|date',
-                // 'is_active' => 'required|boolean',
-                // 'is_public' => 'required|boolean',
-                // 'is_anonymous' => 'required|boolean',
             ]);
 
             $survey = null;
@@ -71,7 +71,7 @@ class SurveyController extends Controller
 
             return response()->json(['status' => true, 'message' => 'survey saved', 'data' => $survey]);
         } catch (\Throwable $th) {
-            throw $th;
+            return response()->json(['status' => false, 'message' => 'Something went wrong', 'error' => $th->getMessage()]);
         }
     }
 
@@ -79,6 +79,8 @@ class SurveyController extends Controller
     {
         try {
             $user = $request->user();
+
+            abort_if(Gate::denies('save survey', $user), 403, 'You are not authorized to view this page');
 
             $survey = $user->surveys()->where('survey_id', $request->survey_id)->first();
 
@@ -126,25 +128,36 @@ class SurveyController extends Controller
 
             return response()->json(['status' => true, 'message' => 'survey saved', 'data' => $survey]);
         } catch (\Throwable $th) {
-            throw $th;
+            return response()->json(['status' => false, 'message' => 'Something went wrong', 'error' => $th->getMessage()]);
         }
     }
 
     public function getSurveys(Request $request)
     {
         try {
-            $surveys = Survey::with('questions')->get();
+            $user = $request->user();
+
+            // abort_if(Gate::denies('get surveys', $user), 403, 'You are not authorized to view this page');
+
+            $surveys = Survey::with('questions')
+                ->where('is_active', true)
+                ->get();
 
             return response()->json(['status' => true, 'message' => 'surveys', 'data' => $surveys]);
         } catch (\Throwable $th) {
-            throw $th;
+            return response()->json(['status' => false, 'message' => 'Something went wrong', 'error' => $th->getMessage()]);
         }
     }
 
     public function getSurvey(Request $request, $slug)
     {
         try {
-            $survey = Survey::with('questions')->where('slug', $slug)->first();
+            $user = $request->user();
+
+            // abort_if(Gate::denies('get survey', $user), 403, 'You are not authorized to view this page');
+            $survey = Survey::with('questions')->where('slug', $slug)
+                ->where('is_active', true)
+                ->first();
 
             // transform the options to array
             foreach ($survey->questions as $question) {
@@ -153,7 +166,27 @@ class SurveyController extends Controller
 
             return response()->json(['status' => true, 'message' => 'survey', 'data' => $survey]);
         } catch (\Throwable $th) {
-            throw $th;
+            return response()->json(['status' => false, 'message' => 'Something went wrong', 'error' => $th->getMessage()]);
+        }
+    }
+
+    public function show(Request $request, $slug)
+    {
+        try {
+            $user = $request->user();
+
+            abort_if(Gate::denies('get survey', $user), 403, 'You are not authorized to view this page');
+            $survey = Survey::with('questions')->where('slug', $slug)
+                ->first();
+
+            // transform the options to array
+            foreach ($survey->questions as $question) {
+                $question->options = json_decode($question->options);
+            }
+
+            return response()->json(['status' => true, 'message' => 'survey', 'data' => $survey]);
+        } catch (\Throwable $th) {
+            return response()->json(['status' => false, 'message' => 'Something went wrong', 'error' => $th->getMessage()]);
         }
     }
 
@@ -162,11 +195,29 @@ class SurveyController extends Controller
         try {
             $user = $request->user();
 
+            abort_if(Gate::denies('delete survey', $user), 403, 'You are not authorized to view this page');
             $survey = $user->surveys()->where('survey_id', $id)->first();
 
             $survey->delete();
 
             return response()->json(['status' => true, 'message' => 'survey deleted']);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function changeSurveyStatus(Request $request, $id)
+    {
+        try {
+            $user = $request->user();
+
+            abort_if(Gate::denies('save survey', $user), 403, 'You are not authorized to view this page');
+            $survey = $user->surveys()->where('survey_id', $id)->first();
+
+            $survey->is_active = !$survey->is_active;
+            $survey->save();
+
+            return response()->json(['status' => true, 'message' => 'survey status changed']);
         } catch (\Throwable $th) {
             throw $th;
         }

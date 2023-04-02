@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
@@ -36,12 +37,16 @@ class LoginController extends Controller
                 if (Hash::check($request->password, $user->password)) {
                     // generate the access token
                     $accessToken = $user->createToken('authToken')->plainTextToken;
+                    $role = DB::table('model_has_roles')
+                    ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+                    ->where('model_id', $user->id)->select(['roles.name'])->get();
 
                     return response()->json([
                         'status' => true,
                         'message' => 'Login successful',
                         'user' => $user,
-                        'access_token' => $accessToken
+                        'access_token' => $accessToken,
+                        'role' => $role,
                     ], 200);
                 } else {
                     return response()->json([

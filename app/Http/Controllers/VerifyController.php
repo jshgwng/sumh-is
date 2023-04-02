@@ -60,7 +60,11 @@ class VerifyController extends Controller
             }
 
         } catch (\Throwable $th) {
-            throw $th;
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong',
+                'error' => $th->getMessage()
+            ]);
         }
     }
 }

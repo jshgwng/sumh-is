@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use DB;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Mail\VerificationCodeEmail;
@@ -15,6 +16,7 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         try {
+            $user = $request->user();
             // validate the request
             $request->validate([
                 'first_name' => 'required|string',
@@ -33,10 +35,10 @@ class RegisterController extends Controller
                 'email' => $request->email,
                 'username' => $request->username,
                 'phone' => $request->phone,
-                'email_verification_token' => Str::random(8),
                 'password' => bcrypt($request->password),
             ]);
 
+            $user->assignRole('respondent');
             // Generate the 8 alphanumeric characters token
             $token = Str::random(8);
 
@@ -62,7 +64,11 @@ class RegisterController extends Controller
             );
 
         } catch (\Throwable $th) {
-            throw $th;
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong',
+                'error' => $th->getMessage(),
+            ], 500);
         }
     }
 }
