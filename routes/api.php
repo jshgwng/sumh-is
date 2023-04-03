@@ -46,6 +46,11 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::post('/user-role', [UserController::class, 'getUserRole']);
 
     Route::post('/survey/{id}/status', [SurveyController::class, 'changeSurveyStatus']);
+
+    Route::post('/users', [UserController::class, 'getUsers']);
+    Route::post('/users/{id}', [UserController::class, 'showUser']);
+    Route::post('/users/{id}/roles', [UserController::class, 'userRoles']);
+    Route::post('/roles', [UserController::class, 'updateUserRoles']);
 });
 
 Route::get('/survey', [SurveyController::class, 'getSurveys']);
