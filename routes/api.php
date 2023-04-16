@@ -51,6 +51,8 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::post('/users/{id}', [UserController::class, 'showUser']);
     Route::post('/users/{id}/roles', [UserController::class, 'userRoles']);
     Route::post('/roles', [UserController::class, 'updateUserRoles']);
+
+    Route::get('/survey/{id}/export', [SurveyReportController::class, 'exportToCsv']);
 });
 
 Route::get('/survey', [SurveyController::class, 'getSurveys']);

@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Question;
 use App\Models\Survey;
 use Illuminate\Http\Request;
+use App\Exports\ResponsesExport;
 use Illuminate\Support\Facades\Gate;
+use League\Csv\Writer;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SurveyReportController extends Controller
 {
@@ -59,16 +63,26 @@ class SurveyReportController extends Controller
                     $val = json_decode($response->response);
                     foreach ($val as $value) {
                         if ($value->question_id == $question->question_id) {
-                            $survey_responses[$question->question][] = $value->response;
+
+                            if (isset($value->grid)) {
+                                $survey_responses[$question->question][] = str_replace("-", " ", $value->grid) . ' - ' . $value->response;
+                            } else {
+                                $survey_responses[$question->question][] = $value->response;
+                            }
                         }
                     }
                 }
             }
 
+
+
+
+
             return response()->json([
                 'survey' => $survey,
                 'responses' => $survey_responses,
                 'bar_chart_data' => $bar_chart_data,
+                'answers' => $responses,
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
@@ -76,5 +90,55 @@ class SurveyReportController extends Controller
                 'error' => $th->getMessage(),
             ], 500);
         }
+    }
+
+    public function handleReports(Request $request, $id)
+    {
+        try {
+            return Excel::download(new ResponsesExport($id), 'survey.xlsx');
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function exportToCsv(Request $request, $id)
+    {
+        $survey = Survey::where('survey_id', $id)->first();
+
+        $questions = $survey->questions()->get();
+        $responses = $survey->responses()->get();
+
+        $survey_responses = [];
+
+        $column_headers = [];
+        // create array of questions
+        foreach($questions as $question) {
+            $column_headers[] = $question->question;
+        }
+
+        // add column headers to array
+        $survey_responses[] = $column_headers;
+
+        // Create array of responses
+        foreach ($responses as $response) {
+            $val = json_decode($response->response);
+            $temp = [];
+            foreach ($val as $value) {
+                $temp[] = $value->response;
+            }
+            $survey_responses[] = $temp;
+        }
+
+
+        $csv = Writer::createFromString('');
+        $csv->insertAll($survey_responses);
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="survey.csv"',
+        ]);
     }
 }
