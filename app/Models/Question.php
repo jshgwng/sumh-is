@@ -24,6 +24,7 @@ class Question extends Model
         'options',
         'is_required',
         'order',
+        'section',
     ];
 
     public function survey(){

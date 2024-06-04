@@ -77,7 +77,7 @@ class UserController extends Controller
         $user = $request->user();
         abort_if(Gate::denies('get user', $user), 403, 'You are not authorized to view this page');
 
-        $users = User::all();
+        $users = User::whereNull('deleted_at')->get();
 
         // format the users
         $data = [];
@@ -107,14 +107,15 @@ class UserController extends Controller
         abort_if(Gate::denies('get user', $user), 403, 'You are not authorized to view this page');
 
         $data = User::find($id);
-        
+
         return response()->json([
             'status' => true,
             'user' => $data,
         ]);
     }
 
-    public function userRoles(Request $request, $id){
+    public function userRoles(Request $request, $id)
+    {
         $user = $request->user();
 
         abort_if(Gate::denies('get user', $user), 403, 'You are not authorized to view this page');
@@ -128,7 +129,7 @@ class UserController extends Controller
         foreach ($all_roles as $role) {
             $checked = false;
             foreach ($data->roles as $user_role) {
-                if($user_role->id == $role->id){
+                if ($user_role->id == $role->id) {
                     $checked = true;
                 }
             }
@@ -147,7 +148,8 @@ class UserController extends Controller
         ]);
     }
 
-    public function updateUserRoles(Request $request){
+    public function updateUserRoles(Request $request)
+    {
         $admin = $request->user();
 
         abort_if(Gate::denies('get user', $admin), 403, 'You are not authorized to view this page');
@@ -159,6 +161,56 @@ class UserController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'User roles updated'
+        ]);
+    }
+
+    public function getCounsellors(Request $request)
+    {
+        $user = $request->user();
+        // abort_if(Gate::denies('get user', $user), 403, 'You are not authorized to view this page');
+
+        $users = DB::table('users')
+            ->join('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('roles.name', 'counsellor')
+            ->orWhere('roles.name', 'admin')
+            ->orWhere('roles.name', 'super-admin')
+            ->select('users.*')
+            ->get();
+
+        // format the users
+        $data = [];
+        foreach ($users as $user) {
+            if ($user->id == $request->user()->id) {
+                continue;
+            }
+            $data[] = [
+                'id' => count($data) + 1,
+                'user_id' => $user->id,
+                'name' => $user->first_name . ' ' . $user->last_name,
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $data,
+            $users
+        ]);
+    }
+
+    public function deleteUser(Request $request, $id)
+    {
+        $admin = $request->user();
+
+        abort_if(Gate::denies('get user', $admin), 403, 'You are not authorized to view this page');
+
+        $user = User::find($id);
+
+        $user->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'User deleted'
         ]);
     }
 }

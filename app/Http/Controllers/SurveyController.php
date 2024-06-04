@@ -155,16 +155,25 @@ class SurveyController extends Controller
             $user = $request->user();
 
             // abort_if(Gate::denies('get survey', $user), 403, 'You are not authorized to view this page');
-            $survey = Survey::with('questions')->where('slug', $slug)
+            $survey = Survey::where('slug', $slug)
                 ->where('is_active', true)
                 ->first();
+
+                $questions = Question::where('survey_id', $survey->survey_id)->get()->groupBy('section');
+
+                // transform the options to array
+                foreach($questions as $key => $value) {
+                    foreach ($value as $question) {
+                        $question->options = json_decode($question->options);
+                    }
+                }
 
             // transform the options to array
             foreach ($survey->questions as $question) {
                 $question->options = json_decode($question->options);
             }
 
-            return response()->json(['status' => true, 'message' => 'survey', 'data' => $survey]);
+            return response()->json(['status' => true, 'message' => 'survey', 'data' => $survey, 'questions' => $questions]);
         } catch (\Throwable $th) {
             return response()->json(['status' => false, 'message' => 'Something went wrong', 'error' => $th->getMessage()]);
         }

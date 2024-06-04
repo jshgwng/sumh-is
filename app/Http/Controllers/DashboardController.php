@@ -15,11 +15,17 @@ class DashboardController extends Controller
 
             $user = $request->user();
             abort_if(Gate::denies('view dashboard', $user), 403, 'You are not authorized to view this page');
-            $surveys = Survey::withCount('responses')->get();
+            // $surveys = Survey::withCount('responses')->get();
+            $surveys = Survey::withCount(['responses', 'responses as responses_count' => function ($query) {
+                $query->select(\DB::raw("COUNT(DISTINCT user_id)"));
+            }])->get();
+
+            // count responses by distinct user_id
+            $responses = Response::select('user_id')->distinct()->get();
 
             $summaries = [
                 'Surveys' => $surveys->count(),
-                'Responses' => $surveys->sum('responses_count'),
+                'Responses' => $responses->count(),
                 'Active' => $surveys->where('is_active', 1)->count(),
             ];
 

@@ -19,6 +19,7 @@ class Response extends Model
     protected $fillable = [
         'response_id',
         'survey_id',
+        'question_id',
         'user_id',
         'response',
         'is_anonymous',

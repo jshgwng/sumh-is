@@ -27,13 +27,24 @@ class ResponseController extends Controller
                 $user_id = auth()->user()->uuid;
             }
 
-            $response = Response::create([
-                'response_id' => Str::uuid(),
-                'survey_id' => $survey->survey_id,
-                'user_id' => $user_id,
-                'response' => json_encode($responses),
-                'is_anonymous' => $survey->is_anonymous,
-            ]);
+            foreach ($responses as $key => $response) {
+                $response = Response::create([
+                    'response_id' => Str::uuid(),
+                    'survey_id' => $survey->survey_id,
+                    'question_id' => $response['question_id'],
+                    'user_id' => $user_id,
+                    'response' => $response['response'],
+                    'is_anonymous' => $survey->is_anonymous,
+                ]);
+            }
+
+            // $response = Response::create([
+            //     'response_id' => Str::uuid(),
+            //     'survey_id' => $survey->survey_id,
+            //     'user_id' => $user_id,
+            //     'response' => json_encode($responses),
+            //     'is_anonymous' => $survey->is_anonymous,
+            // ]);
 
             return response()->json([
                 'message' => 'Responses saved successfully',
